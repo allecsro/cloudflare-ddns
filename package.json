@@ -1,0 +1,13 @@
+{
+  "name": "ddns",
+  "version": "1.0.0",
+  "description": "DynamicDNS using Cloudflare workers",
+  "main": "worker.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Alecsandru Dinu",
+  "license": "ISC",
+  "dependencies": {
+  }
+}
