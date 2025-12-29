@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  ddns-client:
+    build: .
+    image: ghcr.io/${GITHUB_USERNAME:-allecsro}/cloudflare-ddns-client:latest
+    container_name: cloudflare-ddns-client
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Required: Cloudflare Worker configuration
+      - WORKER_URL=${WORKER_URL}
+      - PRESHARED_SECRET=${PRESHARED_SECRET}
+
+      # Required: Hostnames to update (comma-separated)
+      - HOSTNAMES=${HOSTNAMES}
+
+      # Optional: IP check interval in seconds (default: 300 = 5 minutes)
+      - CHECK_INTERVAL=${CHECK_INTERVAL:-300}
+
+      # Optional: IP version to use (4, 6, or both)
+      - IP_VERSION=${IP_VERSION:-4}
+
+      # Optional: IP providers (all, or comma-separated: ipify,cloudflare,icanhazip)
+      - IP_PROVIDERS=${IP_PROVIDERS:-all}
+
+      # Optional: Log level (debug, info, warn, error)
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - ddns-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  ddns-data:
