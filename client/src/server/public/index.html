@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloudflare DDNS Client</title>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #334155;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent: #f97316;
+      --accent-hover: #fb923c;
+      --success: #22c55e;
+      --warning: #eab308;
+      --error: #ef4444;
+      --border: #475569;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 0;
+      margin-bottom: 30px;
+    }
+
+    header .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo svg {
+      width: 40px;
+      height: 40px;
+      fill: var(--accent);
+    }
+
+    .logo h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .status-badge.running {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--success);
+    }
+
+    .status-badge.stopped {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--error);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .status-badge.running .status-dot {
+      background: var(--success);
+    }
+
+    .status-badge.stopped .status-dot {
+      background: var(--error);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .stat-card h3 {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card .value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      font-family: 'Monaco', 'Menlo', monospace;
+    }
+
+    .actions {
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-primary:disabled {
+      background: var(--border);
+      cursor: not-allowed;
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .records-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .record-card {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .record-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .record-hostname {
+      font-size: 1.125rem;
+      font-weight: 600;
+      font-family: 'Monaco', 'Menlo', monospace;
+    }
+
+    .record-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .record-status.current {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--success);
+    }
+
+    .record-status.updating {
+      background: rgba(234, 179, 8, 0.2);
+      color: var(--warning);
+    }
+
+    .record-status.error {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--error);
+    }
+
+    .record-status.unknown {
+      background: rgba(148, 163, 184, 0.2);
+      color: var(--text-secondary);
+    }
+
+    .record-body {
+      padding: 20px;
+    }
+
+    .record-ips {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .ip-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .ip-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+
+    .ip-value {
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.9rem;
+    }
+
+    .record-meta {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .record-error {
+      margin-top: 15px;
+      padding: 12px;
+      background: rgba(239, 68, 68, 0.1);
+      border-radius: 8px;
+      color: var(--error);
+      font-size: 0.875rem;
+    }
+
+    .history-toggle {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border);
+    }
+
+    .history-toggle button {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .history-toggle button:hover {
+      text-decoration: underline;
+    }
+
+    .history-list {
+      display: none;
+      margin-top: 15px;
+    }
+
+    .history-list.open {
+      display: block;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    .history-ip {
+      font-family: 'Monaco', 'Menlo', monospace;
+    }
+
+    .history-time {
+      color: var(--text-secondary);
+    }
+
+    .history-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .history-status.success {
+      background: var(--success);
+    }
+
+    .history-status.failure {
+      background: var(--error);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 60px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    footer {
+      margin-top: 40px;
+      padding: 20px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 15px;
+      }
+
+      header .container {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .record-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+        </svg>
+        <h1>Cloudflare DDNS</h1>
+      </div>
+      <div id="app-status" class="status-badge stopped">
+        <span class="status-dot"></span>
+        <span class="status-text">Loading...</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Current IPv4</h3>
+        <div class="value" id="current-ipv4">--</div>
+      </div>
+      <div class="stat-card">
+        <h3>Current IPv6</h3>
+        <div class="value" id="current-ipv6">--</div>
+      </div>
+      <div class="stat-card">
+        <h3>Last Check</h3>
+        <div class="value" id="last-check">--</div>
+      </div>
+      <div class="stat-card">
+        <h3>Uptime</h3>
+        <div class="value" id="uptime">--</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="update-btn" onclick="triggerUpdate()">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+        Update Now
+      </button>
+    </div>
+
+    <h2 class="section-title">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9C4.63 15.55 4 13.85 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1C19.37 8.45 20 10.15 20 12c0 4.42-3.58 8-8 8z"/>
+      </svg>
+      DNS Records
+    </h2>
+
+    <div id="records-container" class="records-grid">
+      <div class="loading">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>
+      Cloudflare DDNS Client &bull;
+      <a href="https://github.com/allecsro/cloudflare-ddns" target="_blank">GitHub</a>
+    </p>
+  </footer>
+
+  <script>
+    let refreshInterval;
+
+    async function fetchStatus() {
+      try {
+        const response = await fetch('/api/status');
+        if (!response.ok) throw new Error('Failed to fetch status');
+        const data = await response.json();
+        updateUI(data);
+      } catch (error) {
+        console.error('Error fetching status:', error);
+        showError();
+      }
+    }
+
+    function updateUI(data) {
+      // Update status badge
+      const statusBadge = document.getElementById('app-status');
+      statusBadge.className = `status-badge ${data.status}`;
+      statusBadge.querySelector('.status-text').textContent =
+        data.status === 'running' ? 'Running' : 'Stopped';
+
+      // Update stats
+      document.getElementById('current-ipv4').textContent = data.currentIPv4 || '--';
+      document.getElementById('current-ipv6').textContent = data.currentIPv6 || '--';
+      document.getElementById('last-check').textContent =
+        data.lastIPCheck ? formatTime(new Date(data.lastIPCheck)) : '--';
+      document.getElementById('uptime').textContent = formatUptime(data.uptime);
+
+      // Update records
+      const container = document.getElementById('records-container');
+
+      if (data.records.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            <p>No DNS records configured</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = data.records.map(record => renderRecord(record)).join('');
+    }
+
+    function renderRecord(record) {
+      const history = record.updateHistory.slice(0, 10);
+
+      return `
+        <div class="record-card">
+          <div class="record-header">
+            <span class="record-hostname">${escapeHtml(record.hostname)}</span>
+            <span class="record-status ${record.status}">${record.status}</span>
+          </div>
+          <div class="record-body">
+            <div class="record-ips">
+              ${record.ipv4 ? `
+                <div class="ip-item">
+                  <span class="ip-label">IPv4 (A Record)</span>
+                  <span class="ip-value">${escapeHtml(record.ipv4)}</span>
+                </div>
+              ` : ''}
+              ${record.ipv6 ? `
+                <div class="ip-item">
+                  <span class="ip-label">IPv6 (AAAA Record)</span>
+                  <span class="ip-value">${escapeHtml(record.ipv6)}</span>
+                </div>
+              ` : ''}
+              ${!record.ipv4 && !record.ipv6 ? `
+                <div class="ip-item">
+                  <span class="ip-label">IP Address</span>
+                  <span class="ip-value">Not set</span>
+                </div>
+              ` : ''}
+            </div>
+            <div class="record-meta">
+              ${record.lastUpdated ? `
+                <span>Updated: ${formatTime(new Date(record.lastUpdated))}</span>
+              ` : ''}
+              ${record.lastChecked ? `
+                <span>Checked: ${formatTime(new Date(record.lastChecked))}</span>
+              ` : ''}
+            </div>
+            ${record.errorMessage ? `
+              <div class="record-error">${escapeHtml(record.errorMessage)}</div>
+            ` : ''}
+            ${history.length > 0 ? `
+              <div class="history-toggle">
+                <button onclick="toggleHistory(this)">
+                  Show update history (${history.length})
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7 10l5 5 5-5z"/>
+                  </svg>
+                </button>
+                <div class="history-list">
+                  ${history.map(h => `
+                    <div class="history-item">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="history-status ${h.success ? 'success' : 'failure'}"></span>
+                        <span class="history-ip">
+                          ${h.previousIP ? `${escapeHtml(h.previousIP)} → ` : ''}${escapeHtml(h.newIP)}
+                        </span>
+                        <span style="color: var(--text-secondary);">(IPv${h.ipVersion})</span>
+                      </div>
+                      <span class="history-time">${formatTime(new Date(h.timestamp))}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function toggleHistory(button) {
+      const list = button.nextElementSibling;
+      list.classList.toggle('open');
+      button.querySelector('svg').style.transform =
+        list.classList.contains('open') ? 'rotate(180deg)' : '';
+    }
+
+    async function triggerUpdate() {
+      const btn = document.getElementById('update-btn');
+      btn.disabled = true;
+      btn.innerHTML = `
+        <div class="spinner" style="width: 18px; height: 18px; border-width: 2px;"></div>
+        Updating...
+      `;
+
+      try {
+        const response = await fetch('/api/update', { method: 'POST' });
+        if (!response.ok) throw new Error('Update failed');
+
+        // Wait a bit then refresh
+        await new Promise(r => setTimeout(r, 2000));
+        await fetchStatus();
+      } catch (error) {
+        console.error('Update error:', error);
+        alert('Failed to trigger update. Check the console for details.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+          </svg>
+          Update Now
+        `;
+      }
+    }
+
+    function showError() {
+      document.getElementById('records-container').innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+          <p>Failed to load status. Retrying...</p>
+        </div>
+      `;
+    }
+
+    function formatTime(date) {
+      const now = new Date();
+      const diff = Math.floor((now - date) / 1000);
+
+      if (diff < 60) return 'Just now';
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    }
+
+    function formatUptime(seconds) {
+      if (!seconds || seconds < 0) return '--';
+
+      const days = Math.floor(seconds / 86400);
+      const hours = Math.floor((seconds % 86400) / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+
+      if (days > 0) return `${days}d ${hours}h`;
+      if (hours > 0) return `${hours}h ${mins}m`;
+      return `${mins}m`;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Initial load
+    fetchStatus();
+
+    // Refresh every 30 seconds
+    refreshInterval = setInterval(fetchStatus, 30000);
+  </script>
+</body>
+</html>
