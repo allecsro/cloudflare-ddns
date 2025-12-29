@@ -1,4 +1,4 @@
-import pino from 'pino';
+import { pino } from 'pino';
 
 const level = process.env.LOG_LEVEL ?? 'info';
 
