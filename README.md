@@ -160,6 +160,24 @@ docker run -p 8080:8080 \
   cloudflare-ddns-client
 ```
 
+### Build Multi-Architecture Image
+
+If you're building on Apple Silicon (M1/M2/M3) and deploying to an x86 server (like TrueNAS), you need to build a multi-architecture image:
+
+```bash
+# Set up buildx builder (one-time)
+docker buildx create --name multiarch --use
+
+# Build and push for both amd64 and arm64
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t ghcr.io/YOUR_USERNAME/cloudflare-ddns-client:latest \
+  --push \
+  ./client
+```
+
+> **Note:** The `--push` flag is required because multi-arch builds can't be loaded locally. The image is pushed directly to the registry.
+
 ## Project Structure
 
 ```
