@@ -1,0 +1,392 @@
+# TrueNAS Dashboard for Home Assistant (Simple Version)
+# Server: BeeLink ME Mini
+#
+# Required custom cards (install via HACS):
+# - mini-graph-card: https://github.com/kalkih/mini-graph-card
+# - bar-card: https://github.com/custom-cards/bar-card
+# - card-mod: https://github.com/thomasloven/lovelace-card-mod
+# - stack-in-card: https://github.com/custom-cards/stack-in-card
+#
+# This version does NOT require layout-card
+
+title: TrueNAS
+views:
+  - title: TrueNAS
+    path: truenas
+    cards:
+      # ═══════════════════════════════════════════════════════════════════
+      # HEADER SECTION - Server Name & Status
+      # ═══════════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: picture
+                image: /local/images/truenas-logo.png
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: transparent;
+                      box-shadow: none;
+                      max-height: 80px;
+                    }
+              - type: markdown
+                content: |
+                  # BeeLink ME Mini
+                  **TrueNAS Scale**
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: transparent;
+                      box-shadow: none;
+                    }
+              - type: entity
+                entity: update.truenas_update
+                name: Update Status
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: transparent;
+                      box-shadow: none;
+                    }
+
+      # ═══════════════════════════════════════════════════════════════════
+      # SYSTEM STATS - CPU, RAM, Temperature
+      # ═══════════════════════════════════════════════════════════════════
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            entity: sensor.truenas_system_cpu_usage
+            name: CPU
+            min: 0
+            max: 100
+            severity:
+              green: 0
+              yellow: 60
+              red: 85
+          - type: gauge
+            entity: sensor.truenas_system_memory_usage
+            name: RAM
+            min: 0
+            max: 100
+            severity:
+              green: 0
+              yellow: 70
+              red: 90
+          - type: gauge
+            entity: sensor.truenas_system_temperature
+            name: Temperature
+            min: 20
+            max: 90
+            severity:
+              green: 20
+              yellow: 60
+              red: 75
+
+      # ═══════════════════════════════════════════════════════════════════
+      # STORAGE POOLS
+      # ═══════════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: "## Storage Pools"
+            card_mod:
+              style: |
+                ha-card { background: transparent; box-shadow: none; }
+
+          - type: custom:bar-card
+            entities:
+              - entity: sensor.truenas_pool_cloud_used_percentage
+                name: CLOUD (Mirror)
+                icon: mdi:cloud
+              - entity: sensor.truenas_pool_data_used_percentage
+                name: DATA (Mirror)
+                icon: mdi:database
+              - entity: sensor.truenas_pool_media_used_percentage
+                name: MEDIA (Stripe)
+                icon: mdi:play-box-multiple
+            positions:
+              icon: outside
+              indicator: inside
+              name: inside
+              value: inside
+            severity:
+              - color: '#4caf50'
+                from: 0
+                to: 70
+              - color: '#ff9800'
+                from: 70
+                to: 85
+              - color: '#f44336'
+                from: 85
+                to: 100
+            card_mod:
+              style: |
+                bar-card-row {
+                  margin-bottom: 8px;
+                }
+
+      # ═══════════════════════════════════════════════════════════════════
+      # POOL HEALTH STATUS
+      # ═══════════════════════════════════════════════════════════════════
+      - type: glance
+        title: Pool Health
+        show_name: true
+        show_state: true
+        columns: 3
+        entities:
+          - entity: binary_sensor.truenas_pool_cloud_healthy
+            name: CLOUD
+          - entity: binary_sensor.truenas_pool_data_healthy
+            name: DATA
+          - entity: binary_sensor.truenas_pool_media_healthy
+            name: MEDIA
+
+      # ═══════════════════════════════════════════════════════════════════
+      # DATASETS
+      # ═══════════════════════════════════════════════════════════════════
+      - type: entities
+        title: Datasets
+        entities:
+          - entity: sensor.truenas_datasets_apps_downloads
+            name: Apps - Downloads
+            icon: mdi:download
+          - entity: sensor.truenas_datasets_apps_media
+            name: Apps - Media
+            icon: mdi:play-circle
+          - entity: sensor.truenas_datasets_cloud_userdata
+            name: Cloud - User Data
+            icon: mdi:cloud-upload
+          - entity: sensor.truenas_datasets_cloud_google_drive
+            name: Cloud - Google Drive
+            icon: mdi:google-drive
+          - entity: sensor.truenas_datasets_data_backup
+            name: Data - Backup
+            icon: mdi:backup-restore
+
+      # ═══════════════════════════════════════════════════════════════════
+      # DRIVES ROW 1 (nvme0-2)
+      # ═══════════════════════════════════════════════════════════════════
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.truenas_disks_nvme0n1_temperature
+                color: '#ff9800'
+            name: Drive 0
+            icon: mdi:harddisk
+            hours_to_show: 24
+            points_per_hour: 2
+            line_width: 2
+            height: 60
+            show:
+              name: true
+              icon: true
+              state: true
+              graph: true
+              fill: true
+              labels: false
+              legend: false
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.truenas_disks_nvme1n1_temperature
+                color: '#ff9800'
+            name: Drive 1
+            icon: mdi:harddisk
+            hours_to_show: 24
+            points_per_hour: 2
+            line_width: 2
+            height: 60
+            show:
+              name: true
+              icon: true
+              state: true
+              graph: true
+              fill: true
+              labels: false
+              legend: false
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.truenas_disks_nvme2n1_temperature
+                color: '#ff9800'
+            name: Drive 2
+            icon: mdi:harddisk
+            hours_to_show: 24
+            points_per_hour: 2
+            line_width: 2
+            height: 60
+            show:
+              name: true
+              icon: true
+              state: true
+              graph: true
+              fill: true
+              labels: false
+              legend: false
+
+      # ═══════════════════════════════════════════════════════════════════
+      # DRIVES ROW 2 (nvme3-5)
+      # ═══════════════════════════════════════════════════════════════════
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.truenas_disks_nvme3n1_temperature
+                color: '#ff9800'
+            name: Drive 3
+            icon: mdi:harddisk
+            hours_to_show: 24
+            points_per_hour: 2
+            line_width: 2
+            height: 60
+            show:
+              name: true
+              icon: true
+              state: true
+              graph: true
+              fill: true
+              labels: false
+              legend: false
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.truenas_disks_nvme4n1_temperature
+                color: '#ff9800'
+            name: Drive 4
+            icon: mdi:harddisk
+            hours_to_show: 24
+            points_per_hour: 2
+            line_width: 2
+            height: 60
+            show:
+              name: true
+              icon: true
+              state: true
+              graph: true
+              fill: true
+              labels: false
+              legend: false
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.truenas_disks_nvme5n1_temperature
+                color: '#ff9800'
+            name: Drive 5
+            icon: mdi:harddisk
+            hours_to_show: 24
+            points_per_hour: 2
+            line_width: 2
+            height: 60
+            show:
+              name: true
+              icon: true
+              state: true
+              graph: true
+              fill: true
+              labels: false
+              legend: false
+
+      # ═══════════════════════════════════════════════════════════════════
+      # DRIVE STATUS & S.M.A.R.T
+      # ═══════════════════════════════════════════════════════════════════
+      - type: glance
+        title: Drive Status
+        show_name: true
+        show_state: true
+        columns: 6
+        entities:
+          - entity: sensor.truenas_disks_nvme0n1
+            name: "0"
+          - entity: sensor.truenas_disks_nvme1n1
+            name: "1"
+          - entity: sensor.truenas_disks_nvme2n1
+            name: "2"
+          - entity: sensor.truenas_disks_nvme3n1
+            name: "3"
+          - entity: sensor.truenas_disks_nvme4n1
+            name: "4"
+          - entity: sensor.truenas_disks_nvme5n1
+            name: "5"
+
+      - type: glance
+        title: S.M.A.R.T Status
+        show_name: true
+        show_state: true
+        columns: 6
+        entities:
+          - entity: binary_sensor.truenas_disks_nvme0n1_smart
+            name: "0"
+          - entity: binary_sensor.truenas_disks_nvme1n1_smart
+            name: "1"
+          - entity: binary_sensor.truenas_disks_nvme2n1_smart
+            name: "2"
+          - entity: binary_sensor.truenas_disks_nvme3n1_smart
+            name: "3"
+          - entity: binary_sensor.truenas_disks_nvme4n1_smart
+            name: "4"
+          - entity: binary_sensor.truenas_disks_nvme5n1_smart
+            name: "5"
+
+      # ═══════════════════════════════════════════════════════════════════
+      # NETWORK
+      # ═══════════════════════════════════════════════════════════════════
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.truenas_interface_enp1s0_rx
+                color: '#f44336'
+            name: Inbound
+            icon: mdi:download-network
+            hours_to_show: 1
+            points_per_hour: 60
+            line_width: 2
+            height: 80
+            show:
+              name: true
+              icon: true
+              state: true
+              graph: true
+              fill: true
+              labels: false
+              legend: false
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.truenas_interface_enp1s0_tx
+                color: '#4caf50'
+            name: Outbound
+            icon: mdi:upload-network
+            hours_to_show: 1
+            points_per_hour: 60
+            line_width: 2
+            height: 80
+            show:
+              name: true
+              icon: true
+              state: true
+              graph: true
+              fill: true
+              labels: false
+              legend: false
+
+      # ═══════════════════════════════════════════════════════════════════
+      # SYSTEM INFO
+      # ═══════════════════════════════════════════════════════════════════
+      - type: entities
+        title: System Info
+        entities:
+          - entity: sensor.truenas_system_uptime
+            name: Uptime
+            icon: mdi:clock-outline
+          - entity: sensor.truenas_system_version
+            name: Version
+            icon: mdi:information-outline
+          - entity: sensor.truenas_system_load_1min
+            name: Load (1 min)
+            icon: mdi:gauge
+          - entity: sensor.truenas_arc_size
+            name: ARC Size
+            icon: mdi:memory

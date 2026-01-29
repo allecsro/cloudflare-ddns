@@ -1,0 +1,683 @@
+# TrueNAS Dashboard for Home Assistant
+# Server: BeeLink ME Mini
+#
+# Required custom cards (install via HACS):
+# - mini-graph-card: https://github.com/kalkih/mini-graph-card
+# - bar-card: https://github.com/custom-cards/bar-card
+# - card-mod: https://github.com/thomasloven/lovelace-card-mod
+# - stack-in-card: https://github.com/custom-cards/stack-in-card
+#
+# Optional but recommended:
+# - layout-card: https://github.com/thomasloven/lovelace-layout-card
+#
+# NOTE: You may need to adjust some entity names based on your exact setup.
+# Check Developer Tools → States and filter by "truenas" to verify.
+
+title: TrueNAS
+views:
+  - title: TrueNAS
+    path: truenas
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: 1fr
+      max-width: 800px
+      margin: 0 auto
+    cards:
+      # ═══════════════════════════════════════════════════════════════════
+      # HEADER SECTION - Logo, Server Name, Status
+      # ═══════════════════════════════════════════════════════════════════
+      - type: custom:stack-in-card
+        mode: vertical
+        cards:
+          - type: custom:stack-in-card
+            mode: horizontal
+            cards:
+              # TrueNAS Logo
+              - type: picture
+                image: /local/images/truenas-logo.png
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: transparent;
+                      box-shadow: none;
+                      width: 80px;
+                    }
+
+              # Server Image (placeholder - use your own image)
+              - type: picture
+                image: /local/images/beelink-mini.png
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: transparent;
+                      box-shadow: none;
+                      max-width: 200px;
+                    }
+
+              # Update Status Badge
+              - type: entity
+                entity: update.truenas_update
+                name: " "
+                icon: mdi:check-circle
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: transparent;
+                      box-shadow: none;
+                      --primary-text-color: #00bcd4;
+                    }
+
+          # Server Name
+          - type: markdown
+            content: "## BeeLink ME Mini"
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent;
+                  box-shadow: none;
+                  text-align: left;
+                  padding: 0 16px;
+                }
+
+      # ═══════════════════════════════════════════════════════════════════
+      # SYSTEM STATS - CPU, RAM, Temperature
+      # ═══════════════════════════════════════════════════════════════════
+      - type: custom:stack-in-card
+        mode: vertical
+        cards:
+          - type: glance
+            show_name: true
+            show_icon: true
+            show_state: true
+            columns: 3
+            entities:
+              - entity: sensor.truenas_system_cpu_usage
+                name: CPU
+                icon: mdi:cpu-64-bit
+              - entity: sensor.truenas_system_memory_usage
+                name: RAM
+                icon: mdi:memory
+              - entity: sensor.truenas_system_temperature
+                name: Temperature
+                icon: mdi:thermometer
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent;
+                  box-shadow: none;
+                }
+
+      # ═══════════════════════════════════════════════════════════════════
+      # STORAGE POOLS - Visual bars for each pool
+      # ═══════════════════════════════════════════════════════════════════
+      - type: custom:stack-in-card
+        mode: vertical
+        cards:
+          - type: markdown
+            content: "### Storage Pools"
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent;
+                  box-shadow: none;
+                  padding: 8px 16px 0 16px;
+                }
+
+          # Pool: CLOUD (Mirrored, 4TB usable)
+          - type: custom:bar-card
+            entity: sensor.truenas_pool_cloud_used_percentage
+            name: CLOUD (Mirror)
+            icon: mdi:harddisk
+            positions:
+              icon: outside
+              indicator: inside
+              name: inside
+              value: inside
+            severity:
+              - color: '#4caf50'
+                from: 0
+                to: 70
+              - color: '#ff9800'
+                from: 70
+                to: 85
+              - color: '#f44336'
+                from: 85
+                to: 100
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent;
+                  box-shadow: none;
+                  --bar-card-border-radius: 8px;
+                }
+
+          # Pool: DATA (Mirrored, 4TB usable)
+          - type: custom:bar-card
+            entity: sensor.truenas_pool_data_used_percentage
+            name: DATA (Mirror)
+            icon: mdi:harddisk
+            positions:
+              icon: outside
+              indicator: inside
+              name: inside
+              value: inside
+            severity:
+              - color: '#4caf50'
+                from: 0
+                to: 70
+              - color: '#ff9800'
+                from: 70
+                to: 85
+              - color: '#f44336'
+                from: 85
+                to: 100
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent;
+                  box-shadow: none;
+                  --bar-card-border-radius: 8px;
+                }
+
+          # Pool: MEDIA (Stripe, 4TB)
+          - type: custom:bar-card
+            entity: sensor.truenas_pool_media_used_percentage
+            name: MEDIA (Stripe)
+            icon: mdi:harddisk
+            positions:
+              icon: outside
+              indicator: inside
+              name: inside
+              value: inside
+            severity:
+              - color: '#4caf50'
+                from: 0
+                to: 70
+              - color: '#ff9800'
+                from: 70
+                to: 85
+              - color: '#f44336'
+                from: 85
+                to: 100
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent;
+                  box-shadow: none;
+                  --bar-card-border-radius: 8px;
+                }
+
+          # Pool Health Summary
+          - type: glance
+            show_name: true
+            show_icon: true
+            show_state: true
+            columns: 3
+            entities:
+              - entity: sensor.truenas_pool_cloud_healthy
+                name: CLOUD
+                icon: mdi:check-circle
+              - entity: sensor.truenas_pool_data_healthy
+                name: DATA
+                icon: mdi:check-circle
+              - entity: sensor.truenas_pool_media_healthy
+                name: MEDIA
+                icon: mdi:check-circle
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent;
+                  box-shadow: none;
+                }
+
+      # ═══════════════════════════════════════════════════════════════════
+      # DATASETS - Usage bars
+      # ═══════════════════════════════════════════════════════════════════
+      - type: custom:stack-in-card
+        mode: vertical
+        cards:
+          - type: markdown
+            content: "### Datasets"
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent;
+                  box-shadow: none;
+                  padding: 8px 16px 0 16px;
+                }
+
+          - type: entities
+            entities:
+              - entity: sensor.truenas_datasets_apps_downloads
+                name: Apps - Downloads
+                icon: mdi:download
+              - entity: sensor.truenas_datasets_apps_media
+                name: Apps - Media
+                icon: mdi:play-circle
+              - entity: sensor.truenas_datasets_cloud_userdata
+                name: Cloud - User Data
+                icon: mdi:cloud
+              - entity: sensor.truenas_datasets_cloud_google_drive
+                name: Cloud - Google Drive
+                icon: mdi:google-drive
+              - entity: sensor.truenas_datasets_data_backup
+                name: Data - Backup
+                icon: mdi:backup-restore
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent;
+                  box-shadow: none;
+                }
+
+      # ═══════════════════════════════════════════════════════════════════
+      # DRIVES - Individual disk status with temperature graphs
+      # ═══════════════════════════════════════════════════════════════════
+      - type: custom:stack-in-card
+        mode: vertical
+        cards:
+          - type: markdown
+            content: "### Drives"
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent;
+                  box-shadow: none;
+                  padding: 8px 16px 0 16px;
+                }
+
+          # Row 1: Drives 0-2
+          - type: horizontal-stack
+            cards:
+              # Drive nvme0n1
+              - type: custom:stack-in-card
+                mode: vertical
+                cards:
+                  - type: custom:mini-graph-card
+                    entities:
+                      - entity: sensor.truenas_disks_nvme0n1_temperature
+                        name: nvme0n1
+                        color: '#ff9800'
+                    name: Drive 0
+                    icon: mdi:harddisk
+                    hours_to_show: 24
+                    points_per_hour: 2
+                    line_width: 2
+                    height: 50
+                    show:
+                      name: true
+                      icon: true
+                      state: true
+                      graph: true
+                      fill: true
+                      labels: false
+                      legend: false
+                    card_mod:
+                      style: |
+                        ha-card {
+                          --ha-card-background: rgba(50, 50, 50, 0.5);
+                          border-radius: 12px;
+                        }
+                  - type: glance
+                    show_name: false
+                    show_icon: true
+                    show_state: true
+                    columns: 2
+                    entities:
+                      - entity: sensor.truenas_disks_nvme0n1
+                        name: Status
+                        icon: mdi:power
+                      - entity: binary_sensor.truenas_disks_nvme0n1_smart
+                        name: S.M.A.R.T
+                        icon: mdi:shield-check
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: transparent;
+                          box-shadow: none;
+                          font-size: 0.8em;
+                        }
+
+              # Drive nvme1n1
+              - type: custom:stack-in-card
+                mode: vertical
+                cards:
+                  - type: custom:mini-graph-card
+                    entities:
+                      - entity: sensor.truenas_disks_nvme1n1_temperature
+                        name: nvme1n1
+                        color: '#ff9800'
+                    name: Drive 1
+                    icon: mdi:harddisk
+                    hours_to_show: 24
+                    points_per_hour: 2
+                    line_width: 2
+                    height: 50
+                    show:
+                      name: true
+                      icon: true
+                      state: true
+                      graph: true
+                      fill: true
+                      labels: false
+                      legend: false
+                    card_mod:
+                      style: |
+                        ha-card {
+                          --ha-card-background: rgba(50, 50, 50, 0.5);
+                          border-radius: 12px;
+                        }
+                  - type: glance
+                    show_name: false
+                    show_icon: true
+                    show_state: true
+                    columns: 2
+                    entities:
+                      - entity: sensor.truenas_disks_nvme1n1
+                        name: Status
+                        icon: mdi:power
+                      - entity: binary_sensor.truenas_disks_nvme1n1_smart
+                        name: S.M.A.R.T
+                        icon: mdi:shield-check
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: transparent;
+                          box-shadow: none;
+                          font-size: 0.8em;
+                        }
+
+              # Drive nvme2n1
+              - type: custom:stack-in-card
+                mode: vertical
+                cards:
+                  - type: custom:mini-graph-card
+                    entities:
+                      - entity: sensor.truenas_disks_nvme2n1_temperature
+                        name: nvme2n1
+                        color: '#ff9800'
+                    name: Drive 2
+                    icon: mdi:harddisk
+                    hours_to_show: 24
+                    points_per_hour: 2
+                    line_width: 2
+                    height: 50
+                    show:
+                      name: true
+                      icon: true
+                      state: true
+                      graph: true
+                      fill: true
+                      labels: false
+                      legend: false
+                    card_mod:
+                      style: |
+                        ha-card {
+                          --ha-card-background: rgba(50, 50, 50, 0.5);
+                          border-radius: 12px;
+                        }
+                  - type: glance
+                    show_name: false
+                    show_icon: true
+                    show_state: true
+                    columns: 2
+                    entities:
+                      - entity: sensor.truenas_disks_nvme2n1
+                        name: Status
+                        icon: mdi:power
+                      - entity: binary_sensor.truenas_disks_nvme2n1_smart
+                        name: S.M.A.R.T
+                        icon: mdi:shield-check
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: transparent;
+                          box-shadow: none;
+                          font-size: 0.8em;
+                        }
+
+          # Row 2: Drives 3-5
+          - type: horizontal-stack
+            cards:
+              # Drive nvme3n1
+              - type: custom:stack-in-card
+                mode: vertical
+                cards:
+                  - type: custom:mini-graph-card
+                    entities:
+                      - entity: sensor.truenas_disks_nvme3n1_temperature
+                        name: nvme3n1
+                        color: '#ff9800'
+                    name: Drive 3
+                    icon: mdi:harddisk
+                    hours_to_show: 24
+                    points_per_hour: 2
+                    line_width: 2
+                    height: 50
+                    show:
+                      name: true
+                      icon: true
+                      state: true
+                      graph: true
+                      fill: true
+                      labels: false
+                      legend: false
+                    card_mod:
+                      style: |
+                        ha-card {
+                          --ha-card-background: rgba(50, 50, 50, 0.5);
+                          border-radius: 12px;
+                        }
+                  - type: glance
+                    show_name: false
+                    show_icon: true
+                    show_state: true
+                    columns: 2
+                    entities:
+                      - entity: sensor.truenas_disks_nvme3n1
+                        name: Status
+                        icon: mdi:power
+                      - entity: binary_sensor.truenas_disks_nvme3n1_smart
+                        name: S.M.A.R.T
+                        icon: mdi:shield-check
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: transparent;
+                          box-shadow: none;
+                          font-size: 0.8em;
+                        }
+
+              # Drive nvme4n1
+              - type: custom:stack-in-card
+                mode: vertical
+                cards:
+                  - type: custom:mini-graph-card
+                    entities:
+                      - entity: sensor.truenas_disks_nvme4n1_temperature
+                        name: nvme4n1
+                        color: '#ff9800'
+                    name: Drive 4
+                    icon: mdi:harddisk
+                    hours_to_show: 24
+                    points_per_hour: 2
+                    line_width: 2
+                    height: 50
+                    show:
+                      name: true
+                      icon: true
+                      state: true
+                      graph: true
+                      fill: true
+                      labels: false
+                      legend: false
+                    card_mod:
+                      style: |
+                        ha-card {
+                          --ha-card-background: rgba(50, 50, 50, 0.5);
+                          border-radius: 12px;
+                        }
+                  - type: glance
+                    show_name: false
+                    show_icon: true
+                    show_state: true
+                    columns: 2
+                    entities:
+                      - entity: sensor.truenas_disks_nvme4n1
+                        name: Status
+                        icon: mdi:power
+                      - entity: binary_sensor.truenas_disks_nvme4n1_smart
+                        name: S.M.A.R.T
+                        icon: mdi:shield-check
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: transparent;
+                          box-shadow: none;
+                          font-size: 0.8em;
+                        }
+
+              # Drive nvme5n1 (Empty bay placeholder or 6th drive)
+              - type: custom:stack-in-card
+                mode: vertical
+                cards:
+                  - type: custom:mini-graph-card
+                    entities:
+                      - entity: sensor.truenas_disks_nvme5n1_temperature
+                        name: nvme5n1
+                        color: '#ff9800'
+                    name: Drive 5
+                    icon: mdi:harddisk
+                    hours_to_show: 24
+                    points_per_hour: 2
+                    line_width: 2
+                    height: 50
+                    show:
+                      name: true
+                      icon: true
+                      state: true
+                      graph: true
+                      fill: true
+                      labels: false
+                      legend: false
+                    card_mod:
+                      style: |
+                        ha-card {
+                          --ha-card-background: rgba(50, 50, 50, 0.5);
+                          border-radius: 12px;
+                        }
+                  - type: glance
+                    show_name: false
+                    show_icon: true
+                    show_state: true
+                    columns: 2
+                    entities:
+                      - entity: sensor.truenas_disks_nvme5n1
+                        name: Status
+                        icon: mdi:power
+                      - entity: binary_sensor.truenas_disks_nvme5n1_smart
+                        name: S.M.A.R.T
+                        icon: mdi:shield-check
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: transparent;
+                          box-shadow: none;
+                          font-size: 0.8em;
+                        }
+
+      # ═══════════════════════════════════════════════════════════════════
+      # NETWORK - Inbound/Outbound Traffic
+      # ═══════════════════════════════════════════════════════════════════
+      - type: custom:stack-in-card
+        mode: horizontal
+        cards:
+          # Inbound Traffic
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.truenas_interface_enp1s0_rx
+                name: Inbound
+                color: '#f44336'
+            name: Inbound
+            icon: mdi:download
+            hours_to_show: 1
+            points_per_hour: 60
+            line_width: 2
+            height: 60
+            show:
+              name: true
+              icon: true
+              state: true
+              graph: true
+              fill: true
+              labels: false
+              legend: false
+            card_mod:
+              style: |
+                ha-card {
+                  --ha-card-background: rgba(50, 50, 50, 0.5);
+                  border-radius: 12px;
+                }
+
+          # Outbound Traffic
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.truenas_interface_enp1s0_tx
+                name: Outbound
+                color: '#4caf50'
+            name: Outbound
+            icon: mdi:upload
+            hours_to_show: 1
+            points_per_hour: 60
+            line_width: 2
+            height: 60
+            show:
+              name: true
+              icon: true
+              state: true
+              graph: true
+              fill: true
+              labels: false
+              legend: false
+            card_mod:
+              style: |
+                ha-card {
+                  --ha-card-background: rgba(50, 50, 50, 0.5);
+                  border-radius: 12px;
+                }
+
+      # ═══════════════════════════════════════════════════════════════════
+      # SYSTEM INFO - Uptime, Version, etc.
+      # ═══════════════════════════════════════════════════════════════════
+      - type: custom:stack-in-card
+        mode: vertical
+        cards:
+          - type: markdown
+            content: "### System Info"
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent;
+                  box-shadow: none;
+                  padding: 8px 16px 0 16px;
+                }
+          - type: entities
+            entities:
+              - entity: sensor.truenas_system_uptime
+                name: Uptime
+                icon: mdi:clock-outline
+              - entity: sensor.truenas_system_version
+                name: Version
+                icon: mdi:information-outline
+              - entity: sensor.truenas_system_load_1min
+                name: Load (1 min)
+                icon: mdi:gauge
+              - entity: sensor.truenas_arc_size
+                name: ARC Size
+                icon: mdi:memory
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent;
+                  box-shadow: none;
+                }
